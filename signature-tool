@@ -1,1 +1,361 @@
+import React, { useState, useRef } from 'react';
+import { FileText, Download } from 'lucide-react';
 
+export default function CourseContractApp() {
+  const [step, setStep] = useState('form');
+  const [formData, setFormData] = useState({
+    nume: '',
+    prenume: '',
+    serieCI: '',
+    numarCI: '',
+    cnp: '',
+    adresa: ''
+  });
+  const [signature, setSignature] = useState('');
+  const [contractNumber, setContractNumber] = useState('');
+  const [contractDate, setContractDate] = useState(new Date().toISOString().split('T')[0]);
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const generateContractNumber = (date) => {
+    const counter = Math.floor(Math.random() * 1000);
+    const [year, month, day] = date.split('-');
+    return `${counter}S / ${day}.${month}.${year}`;
+  };
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleGenerateContract = () => {
+    if (formData.nume && formData.prenume && formData.serieCI && formData.numarCI && formData.cnp && formData.adresa) {
+      setContractNumber(generateContractNumber(contractDate));
+      setStep('contract');
+    }
+  };
+
+  const startDrawing = (e) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    setIsDrawing(true);
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setSignature('');
+  };
+
+  const saveSignature = () => {
+    const canvas = canvasRef.current;
+    const signatureData = canvas.toDataURL();
+    setSignature(signatureData);
+    setStep('complete');
+  };
+
+  const formatDateRO = (dateStr) => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}.${month}.${year}`;
+  };
+
+  const downloadContractAsHTML = () => {
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: 'Times New Roman', Times, serif; padding: 40px 60px; max-width: 850px; margin: 0 auto; line-height: 1.6; font-size: 11pt; }
+    .header { margin-bottom: 20px; font-size: 10pt; }
+    h1 { text-align: center; margin: 30px 0 10px 0; font-size: 14pt; }
+    .contract-number { text-align: center; margin-bottom: 30px; font-weight: bold; }
+    .section-title { font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
+    .parties { margin: 20px 0; text-align: justify; }
+    .signature-section { margin-top: 50px; display: flex; justify-content: space-between; }
+    .signature-box { text-align: center; }
+    .signature-img { max-width: 200px; border: 1px solid #000; padding: 5px; margin: 10px 0; }
+    p { text-align: justify; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <strong>Furnizor: SPH TRAINING SRL</strong><br>
+    Reg. com: J40/7080/2016<br>
+    CIF: 36097789<br>
+    Adresa: Aleea Sg Maj Emil Holut nr 4, bl 161, sc 4, et 1, ap 52, sector 4, București, Jud. Municipiul București<br>
+    IBAN: RO59INGB0000999905938383<br>
+    Banca: ING BANK NV
+  </div>
+
+  <h1>CONTRACT DE PRESTĂRI SERVICII - Curs de scriere - București</h1>
+  <div class="contract-number">Nr. ${contractNumber}</div>
+
+  <div class="section-title">1. Părțile contractante:</div>
+  <div class="parties">
+    <p><strong>SPH TRAINING SRL</strong> în calitate de prestator, cu sediul în București, Aleea Sg Maj Emil Holut nr 4, bl 161, sc 4, et 1, ap 52, sector 4, înregistrată la Registrul Comerțului sub nr J40/7080/2016 având C.U.I. 36097789, cont RO59INGB0000999905938383, deschis la ING BANK - București, reprezentată prin ZĂRNESCU IONUȚ DANIEL, având funcția de administrator, denumit în continuare <strong>Furnizor,</strong></p>
+    <p>Și</p>
+    <p><strong>CURSANT: ${formData.nume.toUpperCase()} ${formData.prenume.toUpperCase()}</strong></p>
+    <p>În calitate de persoană fizică cu următoarele date: Buletin BI/CI, seria ${formData.serieCI} Nr. ${formData.numarCI}, CNP: ${formData.cnp}</p>
+    <p>Adresa domiciliu: ${formData.adresa}</p>
+    <p>denumit în continuare <strong>Beneficiar</strong></p>
+  </div>
+
+  <div class="section-title">2. Obiectul contractului:</div>
+  <p>2.1. Obiectul contractului îl constituie prestarea de către Furnizor a serviciului de formare în domeniul scrierii de carte.</p>
+  <p>2.2. <strong>Calendarul modulelor:</strong> Modul 1: 16-18 Mai 2025 (fizic), Modul 2: 7-8 Iunie (online), Modul 3: 5-6 Iulie (online), Modul 4: 2-3 August (online), Modul 5: 23-24 August (online) Modul 6: 26-28 Septembrie (fizic).</p>
+  <p>2.3 Fiecare modul va fi însoțit și de exerciții de punere în practică a informațiilor teoretice comunicate.</p>
+
+  <div class="section-title">3. Prețul contractului</div>
+  <p>3.1 Valoarea serviciului prestat este 694 EUR/modul până la data de 15.05.2025. Plata se face în avans, lunar sau integral, până la data desfășurării modulului. În caz de neplată, ne rezervăm dreptul de a nu permite participarea la curs. Prețul se calculează la curs BNR din data facturării.</p>
+
+  <div class="signature-section">
+    <div class="signature-box">
+      <strong>Furnizor,</strong><br>
+      <strong>SC SPH TRAINING SRL</strong><br><br>
+      <strong>ZĂRNESCU IONUȚ DANIEL</strong>
+    </div>
+    <div class="signature-box">
+      <strong>Beneficiar,</strong><br><br>
+      ${signature ? `<img src="${signature}" alt="Signature" class="signature-img" />` : '<br><br>'}
+      <strong>${formData.nume.toUpperCase()} ${formData.prenume.toUpperCase()}</strong>
+    </div>
+  </div>
+</body>
+</html>`;
+    
+    const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${formData.nume}_${formData.prenume}_Contract_Scoala_de_Scris.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <FileText className="w-16 h-16 mx-auto text-indigo-600 mb-4" />
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Contract de Prestări Servicii</h1>
+          <p className="text-gray-600">Școala de Scris Daniel Zărnescu</p>
+        </div>
+
+        {step === 'form' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Date Cursant</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nume</label>
+                  <input
+                    type="text"
+                    name="nume"
+                    value={formData.nume}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Introduceți numele"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prenume</label>
+                  <input
+                    type="text"
+                    name="prenume"
+                    value={formData.prenume}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Introduceți prenumele"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Seria CI/BI</label>
+                  <input
+                    type="text"
+                    name="serieCI"
+                    value={formData.serieCI}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Ex: RT"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Număr CI/BI</label>
+                  <input
+                    type="text"
+                    name="numarCI"
+                    value={formData.numarCI}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Ex: 123456"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">CNP</label>
+                <input
+                  type="text"
+                  name="cnp"
+                  value={formData.cnp}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Introduceți CNP-ul"
+                  maxLength="13"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adresa Domiciliu</label>
+                <textarea
+                  name="adresa"
+                  value={formData.adresa}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Introduceți adresa completă"
+                  rows="2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Data Contractului</label>
+                <input
+                  type="date"
+                  value={contractDate}
+                  onChange={(e) => setContractDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              <button
+                onClick={handleGenerateContract}
+                disabled={!formData.nume || !formData.prenume || !formData.serieCI || !formData.numarCI || !formData.cnp || !formData.adresa}
+                className="w-full mt-6 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Generează Contract
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'contract' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Contract de Prestări Servicii</h2>
+            
+            <div className="bg-indigo-50 p-4 rounded-lg mb-6">
+              <p className="text-sm text-gray-600">Număr Contract</p>
+              <p className="font-semibold text-gray-800">{contractNumber}</p>
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded-lg mb-6 max-h-96 overflow-y-auto text-sm">
+              <p className="font-semibold mb-2">CURSANT: {formData.nume.toUpperCase()} {formData.prenume.toUpperCase()}</p>
+              <p className="mb-1">Buletin/CI: seria {formData.serieCI} Nr. {formData.numarCI}</p>
+              <p className="mb-1">CNP: {formData.cnp}</p>
+              <p className="mb-4">Adresa: {formData.adresa}</p>
+              
+              <p className="text-xs text-gray-600 italic">
+                Acest contract conține toate clauzele standard ale Școlii de Scris Daniel Zărnescu, 
+                inclusiv termeni și condiții, obligații ale părților, confidențialitate și alte dispoziții legale.
+                Contractul complet va fi generat la descărcare.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">Semnătură Beneficiar:</h3>
+              <canvas
+                ref={canvasRef}
+                width={600}
+                height={200}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                className="border-2 border-gray-300 rounded-lg cursor-crosshair w-full"
+                style={{ touchAction: 'none' }}
+              />
+              <button
+                onClick={clearSignature}
+                className="mt-3 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              >
+                Șterge Semnătura
+              </button>
+            </div>
+
+            <button
+              onClick={saveSignature}
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
+            >
+              Semnează Contractul
+            </button>
+          </div>
+        )}
+
+        {step === 'complete' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Contract Semnat!</h2>
+            <p className="text-gray-600 mb-6">Înscrierea la curs este completă.</p>
+            
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <p className="text-sm text-gray-700"><strong>Număr Contract:</strong> {contractNumber}</p>
+              <p className="text-sm text-gray-700"><strong>Nume:</strong> {formData.nume} {formData.prenume}</p>
+              <p className="text-sm text-gray-700"><strong>CNP:</strong> {formData.cnp}</p>
+              <p className="text-sm text-gray-700"><strong>Data:</strong> {formatDateRO(contractDate)}</p>
+            </div>
+
+            {signature && (
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-2">Semnătura:</p>
+                <img src={signature} alt="Signature" className="border-2 border-gray-300 rounded-lg mx-auto" />
+              </div>
+            )}
+
+            <button
+              onClick={downloadContractAsHTML}
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+            >
+              <Download className="w-5 h-5" />
+              Descarcă Contractul (HTML)
+            </button>
+            <p className="text-xs text-gray-500 mt-3">
+              Pentru a salva ca PDF: deschide fișierul HTML → Print → Save as PDF
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
